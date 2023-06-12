@@ -18,7 +18,12 @@ def formatted_time() -> str:
     return formatted_datetime
 
 
-async def listen_tcp_chat(host: str, port: int, history_file: str):
+async def listen_tcp_chat(
+    host: str,
+    port: int,
+    queue: asyncio.Queue,
+    history_file: str
+):
     async with get_asyncio_connection(host=host, port=port) as connection:
         reader, _ = connection
         async with aiofiles.open(history_file, mode='a') as log_file:
@@ -31,7 +36,8 @@ async def listen_tcp_chat(host: str, port: int, history_file: str):
                     data = await reader.readline()
                     message = data.decode()
                     if message:
-                        print(message, end='')
+                        # print(message, end='')
+                        queue.put_nowait(message)
                         await log_file.write(f'{formatted_time()} {message}')
                 except KeyboardInterrupt:
                     print('\nGoodbye!')

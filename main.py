@@ -1,25 +1,50 @@
 import asyncio
 import gui
-from time import time
+import configargparse
+from argparse import Namespace
+from chat_client import listen_tcp_chat
 
-loop = asyncio.get_event_loop()
 
 messages_queue = asyncio.Queue()
 sending_queue = asyncio.Queue()
 status_updates_queue = asyncio.Queue()
 
 
-async def generate_msgs(queue):
-    while True:
-        timestamp = int(time())
-        message = f'Ping {timestamp}'
-        queue.put_nowait(message)
-        await asyncio.sleep(1)
+def parse_arguments() -> Namespace:
+    parser = configargparse.ArgParser(
+        default_config_files=['config.txt'],
+        description='''Local chat client.
+        Print messages to stdout and save them to file'''
+    )
+    parser.add(
+        '-s',
+        '--host',
+        nargs='?',
+        help='host site to be connected to'
+    )
+    parser.add(
+        '-p',
+        '--port',
+        type=int,
+        nargs='?',
+        help='host port to be connected to'
+    )
+    parser.add(
+        '-y',
+        '--history',
+        nargs='?',
+        help='file to write chat history to'
+    )
+    args = parser.parse_known_args()
+
+    return args
 
 
 async def main():
-    tasks = await asyncio.gather(
-        generate_msgs(messages_queue),
+    args = parse_arguments()[0]
+    host, port, history_file = args.host, args.port, args.history
+    await asyncio.gather(
+        listen_tcp_chat(host, port, messages_queue, history_file),
         gui.draw(
             messages_queue,
             sending_queue,
@@ -28,4 +53,11 @@ async def main():
     )
 
 
-loop.run_until_complete(main())
+if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    try:
+        loop.run_until_complete(main())
+    except Exception:
+        pass
+    finally:
+        loop.close()
