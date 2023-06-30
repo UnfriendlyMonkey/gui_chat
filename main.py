@@ -3,6 +3,7 @@ import gui
 import configargparse
 from argparse import Namespace
 from chat_client import listen_tcp_chat, save_messages
+from chat_messanger import send_messages
 
 
 messages_queue = asyncio.Queue()
@@ -51,6 +52,7 @@ async def main():
     await asyncio.gather(
         listen_tcp_chat(host, port, messages_queue, save_queue),
         save_messages(history_file, save_queue),
+        send_messages('test', 5555, sending_queue, messages_queue),
         gui.draw(
             messages_queue,
             sending_queue,

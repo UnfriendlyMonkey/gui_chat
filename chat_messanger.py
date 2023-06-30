@@ -94,6 +94,17 @@ async def submit_message(writer: StreamWriter, message: str = None) -> None:
     await writer.drain()
 
 
+async def send_messages(
+        host: str, port: int, input_queue: asyncio.Queue, out_queue: asyncio.Queue
+):
+    while True:
+        try:
+            message = await input_queue.get()
+            out_queue.put_nowait(f'User send: {message}')
+        except KeyboardInterrupt:
+            break
+
+
 async def tcp_chat_messanger(
         message: str,
         host: str,
