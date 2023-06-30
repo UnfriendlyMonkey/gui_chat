@@ -1,9 +1,13 @@
 import asyncio
+
+from os import environ
+from os.path import join, dirname
+from dotenv import load_dotenv
 import gui
 import configargparse
 from argparse import Namespace
 from chat_client import listen_tcp_chat, save_messages
-from chat_messanger import send_messages
+from chat_messanger import tcp_chat_messanger
 
 
 messages_queue = asyncio.Queue()
@@ -32,6 +36,19 @@ def parse_arguments() -> Namespace:
         help='host port to be connected to'
     )
     parser.add(
+        '-o',
+        '--mport',
+        type=int,
+        nargs='?',
+        help='host port to connect to send messages'
+    )
+    parser.add(
+        '-t',
+        '--token',
+        nargs='?',
+        help='enter your token to connect to chat'
+    )
+    parser.add(
         '-y',
         '--history',
         nargs='?',
@@ -45,6 +62,11 @@ def parse_arguments() -> Namespace:
 async def main():
     args = parse_arguments()[0]
     host, port, history_file = args.host, args.port, args.history
+    mport, token = args.mport, args.token
+    dotenv_path = join(dirname(__file__), '.env')
+    load_dotenv(dotenv_path)
+    if not token:
+        token = environ.get('TOKEN')
     with open(history_file, 'r') as file:
         # load history to the GUI
         while line := file.readline():
@@ -52,7 +74,8 @@ async def main():
     await asyncio.gather(
         listen_tcp_chat(host, port, messages_queue, save_queue),
         save_messages(history_file, save_queue),
-        send_messages('test', 5555, sending_queue, messages_queue),
+        # send_messages('test', 5555, sending_queue, messages_queue),
+        tcp_chat_messanger(host, mport, token, sending_queue, messages_queue),
         gui.draw(
             messages_queue,
             sending_queue,
