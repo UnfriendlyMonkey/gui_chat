@@ -7,7 +7,9 @@ import gui
 import configargparse
 from argparse import Namespace
 from chat_client import listen_tcp_chat, save_messages
-from chat_messanger import tcp_chat_messanger
+from chat_messanger import tcp_chat_messanger, InvalidToken
+
+from tkinter import messagebox
 
 
 messages_queue = asyncio.Queue()
@@ -81,6 +83,7 @@ async def main():
             sending_queue,
             status_updates_queue
         ),
+        # return_exceptions=True
     )
 
 
@@ -88,6 +91,8 @@ if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     try:
         loop.run_until_complete(main())
+    except InvalidToken as err:
+        messagebox.showinfo(err.title, err.message)
     except Exception:
         pass
     finally:

@@ -1,15 +1,24 @@
 import asyncio
 import json
-import configargparse
+# import configargparse
 import logging
-import sys
-from os import environ
-from os.path import join, dirname
-from dotenv import load_dotenv
+# import sys
+# from os import environ
+# from os.path import join, dirname
+# from dotenv import load_dotenv
 from asyncio import StreamReader, StreamWriter
-from argparse import Namespace
+# from argparse import Namespace
 
 from utils import get_asyncio_connection
+
+# from tkinter import messagebox
+
+
+class InvalidToken(Exception):
+    def __init__(self, title: str, message: str) -> None:
+        self.title = title
+        self.message = message
+        super().__init__(title, message)
 
 
 logger = logging.getLogger('messanger')
@@ -32,18 +41,19 @@ async def authorise(
         ask_for_authorization = hash_prompt.decode()
         logger.debug(ask_for_authorization)
         # output_queue.put_nowait(ask_for_authorization)
+    token = token[:-3]  # faking wrong token
     await submit_message(writer, token)
 
     greeting = await reader.readline()
-    if not greeting:
-        message = 'Unknown token. Please check it or sign up again'
-        output_queue.put_nowait(message)
-        logger.debug(message)
-        sys.exit(1)
-
     greeting = json.loads(greeting)
+    logger.debug(f'Greeting: {greeting}')
 
-    logger.debug(greeting)
+    if not greeting:
+        title, message = 'Unknown token', 'Check it or sign up again'
+        output_queue.put_nowait(title)
+        logger.debug(f'{title}. {message}')
+        raise InvalidToken(title, message)
+
     name = greeting.get('nickname', 'WRONG!!!!!')
     output_queue.put_nowait(f'Authorization complete. User {name}.')
 
@@ -94,7 +104,7 @@ async def submit_message(
     if not message:
         return
     message = message.replace("\\n", "")
-    logger.debug(message)
+    logger.debug(f'Sending: {message}')
     end_message = f'{message}\n\n'.encode()
     writer.write(end_message)
     await writer.drain()
@@ -140,59 +150,3 @@ async def tcp_chat_messanger(
                 print('\nGoodbye!')
                 logger.debug('Program terminated by KeyboardInterrupt')
                 break
-
-
-# def parse_arguments() -> Namespace:
-#     parser = configargparse.ArgParser(
-#         default_config_files=['config.txt'],
-#         description='''Local chat messanger. After beeing authorized
-#         you could input you messages for them to appear in local chat'''
-#     )
-#     parser.add(
-#         '-m',
-#         '--message',
-#         required=True,
-#         help='message to send'
-#     )
-#     parser.add(
-#         '-s',
-#         '--host',
-#         nargs='?',
-#         help='host site to be connected to'
-#     )
-#     parser.add(
-#         '-o',
-#         '--mport',
-#         type=int,
-#         nargs='?',
-#         help='host port to connect to send messages'
-#     )
-#     parser.add(
-#         '-t',
-#         '--token',
-#         nargs='?',
-#         help='enter your token to connect to chat'
-#     )
-#     parser.add(
-#         '-n',
-#         '--name',
-#         nargs='?',
-#         help='enter your preferred name'
-#     )
-#     args = parser.parse_known_args()
-
-#     return args
-
-
-# def main():
-#     args = parse_arguments()[0]
-#     message = args.message
-#     host, port = args.host, args.mport
-#     token, name = args.token, args.name
-#     dotenv_path = join(dirname(__file__), '.env')
-#     load_dotenv(dotenv_path)
-#     asyncio.run(tcp_chat_messanger(message, host, port, token, name))
-
-
-# if __name__ == '__main__':
-#     main()
