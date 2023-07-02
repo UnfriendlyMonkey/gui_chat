@@ -2,6 +2,13 @@ import asyncio
 import socket
 from contextlib import asynccontextmanager
 from typing import Tuple
+from gui import ReadConnectionStateChanged, SendingConnectionStateChanged
+
+
+states = {
+    'read': ReadConnectionStateChanged,
+    'send': SendingConnectionStateChanged
+}
 
 
 def increase_delay() -> int:
@@ -16,14 +23,19 @@ def increase_delay() -> int:
 @asynccontextmanager
 async def get_asyncio_connection(
     host: str,
-    port: str
+    port: str,
+    status_queue: asyncio.Queue,
+    client: str
 ) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:
     try:
+        status_queue.put_nowait(states[client].INITIATED)
+        await asyncio.sleep(3)
         for delay in increase_delay():
             try:
                 reader, writer = await asyncio.open_connection(
                     host=host, port=port
                 )
+                status_queue.put_nowait(states[client].ESTABLISHED)
                 yield reader, writer
             except (
                 socket.gaierror,
@@ -32,5 +44,6 @@ async def get_asyncio_connection(
             ):
                 await asyncio.sleep(delay)
     finally:
+        status_queue.put_nowait(states[client].CLOSED)
         writer.close()
         await writer.wait_closed()

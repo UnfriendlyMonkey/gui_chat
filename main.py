@@ -74,16 +74,22 @@ async def main():
         while line := file.readline():
             messages_queue.put_nowait(line.rstrip())
     await asyncio.gather(
-        listen_tcp_chat(host, port, messages_queue, save_queue),
+        listen_tcp_chat(
+            host, port, messages_queue, save_queue, status_updates_queue),
         save_messages(history_file, save_queue),
-        # send_messages('test', 5555, sending_queue, messages_queue),
-        tcp_chat_messanger(host, mport, token, sending_queue, messages_queue),
+        tcp_chat_messanger(
+            host,
+            mport,
+            token,
+            sending_queue,
+            messages_queue,
+            status_updates_queue
+        ),
         gui.draw(
             messages_queue,
             sending_queue,
             status_updates_queue
         ),
-        # return_exceptions=True
     )
 
 

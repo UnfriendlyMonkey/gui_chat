@@ -10,6 +10,7 @@ from asyncio import StreamReader, StreamWriter
 # from argparse import Namespace
 
 from utils import get_asyncio_connection
+from gui import NicknameReceived
 
 # from tkinter import messagebox
 
@@ -41,7 +42,7 @@ async def authorise(
         ask_for_authorization = hash_prompt.decode()
         logger.debug(ask_for_authorization)
         # output_queue.put_nowait(ask_for_authorization)
-    token = token[:-3]  # faking wrong token
+    # token = token[:-3]  # faking wrong token
     await submit_message(writer, token)
 
     greeting = await reader.readline()
@@ -56,6 +57,7 @@ async def authorise(
 
     name = greeting.get('nickname', 'WRONG!!!!!')
     output_queue.put_nowait(f'Authorization complete. User {name}.')
+    return name
 
 
 # async def register(
@@ -126,7 +128,8 @@ async def tcp_chat_messanger(
         token: str,
         # name: str,
         input_queue: asyncio.Queue,
-        output_queue: asyncio.Queue
+        output_queue: asyncio.Queue,
+        status_queue: asyncio.Queue
         ) -> None:
     logger.debug(f'The Messanger have started working on {host}, {port}')
     # if not token:
@@ -135,9 +138,12 @@ async def tcp_chat_messanger(
     #     async with get_asyncio_connection(host=host, port=port) as connection:
     #         reader, writer = connection
     #         token = await register(reader, writer, name)
-    async with get_asyncio_connection(host=host, port=port) as connection:
+    async with get_asyncio_connection(
+        host=host, port=port, status_queue=status_queue, client='send'
+    ) as connection:
         reader, writer = connection
-        await authorise(reader, writer, token, output_queue)
+        name = await authorise(reader, writer, token, output_queue)
+        status_queue.put_nowait(NicknameReceived(name))
 
         await reader.readline()
         # await submit_message(writer, message)

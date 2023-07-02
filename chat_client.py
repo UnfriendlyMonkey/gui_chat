@@ -23,8 +23,11 @@ async def listen_tcp_chat(
     port: int,
     messages_queue: asyncio.Queue,
     save_queue: asyncio.Queue,
+    status_queue: asyncio.Queue,
 ) -> None:
-    async with get_asyncio_connection(host=host, port=port) as connection:
+    async with get_asyncio_connection(
+        host=host, port=port, status_queue=status_queue, client='read'
+    ) as connection:
         reader, _ = connection
         save_queue.put_nowait('Connection is set\n')
         logger.debug(
