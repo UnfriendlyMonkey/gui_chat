@@ -35,10 +35,12 @@ async def authorise(
     reader: StreamReader,
     writer: StreamWriter,
     token: str,
-    output_queue: asyncio.Queue
+    output_queue: asyncio.Queue,
+    watchdog_queue: asyncio.Queue
 ) -> None:
     hash_prompt = await reader.readline()
     if hash_prompt:
+        watchdog_queue.put_nowait('Prompt before auth')
         ask_for_authorization = hash_prompt.decode()
         logger.debug(ask_for_authorization)
         # output_queue.put_nowait(ask_for_authorization)
@@ -56,7 +58,7 @@ async def authorise(
         raise InvalidToken(title, message)
 
     name = greeting.get('nickname', 'WRONG!!!!!')
-    output_queue.put_nowait(f'Authorization complete. User {name}.')
+    watchdog_queue.put_nowait('Authorization done')
     return name
 
 
@@ -129,7 +131,8 @@ async def tcp_chat_messanger(
         # name: str,
         input_queue: asyncio.Queue,
         output_queue: asyncio.Queue,
-        status_queue: asyncio.Queue
+        status_queue: asyncio.Queue,
+        watchdog_queue: asyncio.Queue
         ) -> None:
     logger.debug(f'The Messanger have started working on {host}, {port}')
     # if not token:
@@ -142,7 +145,9 @@ async def tcp_chat_messanger(
         host=host, port=port, status_queue=status_queue, client='send'
     ) as connection:
         reader, writer = connection
-        name = await authorise(reader, writer, token, output_queue)
+        watchdog_queue.put_nowait('Messanger got connection')
+        name = await authorise(
+            reader, writer, token, output_queue, watchdog_queue)
         status_queue.put_nowait(NicknameReceived(name))
 
         await reader.readline()
@@ -152,6 +157,7 @@ async def tcp_chat_messanger(
                 message = await input_queue.get()
                 if message:
                     await submit_message(writer, message)
+                    watchdog_queue.put_nowait('Message send')
             except KeyboardInterrupt:
                 print('\nGoodbye!')
                 logger.debug('Program terminated by KeyboardInterrupt')

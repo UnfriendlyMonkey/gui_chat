@@ -8,6 +8,7 @@ import configargparse
 from argparse import Namespace
 from chat_client import listen_tcp_chat, save_messages
 from chat_messanger import tcp_chat_messanger, InvalidToken
+from utils import watch_for_connection
 
 from tkinter import messagebox
 
@@ -16,6 +17,7 @@ messages_queue = asyncio.Queue()
 sending_queue = asyncio.Queue()
 status_updates_queue = asyncio.Queue()
 save_queue = asyncio.Queue()
+watchdog_queue = asyncio.Queue()
 
 
 def parse_arguments() -> Namespace:
@@ -75,16 +77,24 @@ async def main():
             messages_queue.put_nowait(line.rstrip())
     await asyncio.gather(
         listen_tcp_chat(
-            host, port, messages_queue, save_queue, status_updates_queue),
-        save_messages(history_file, save_queue),
+            host,
+            port,
+            messages_queue,
+            save_queue,
+            status_updates_queue,
+            watchdog_queue
+        ),
         tcp_chat_messanger(
             host,
             mport,
             token,
             sending_queue,
             messages_queue,
-            status_updates_queue
+            status_updates_queue,
+            watchdog_queue
         ),
+        save_messages(history_file, save_queue),
+        watch_for_connection(watchdog_queue),
         gui.draw(
             messages_queue,
             sending_queue,

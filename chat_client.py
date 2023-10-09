@@ -24,12 +24,13 @@ async def listen_tcp_chat(
     messages_queue: asyncio.Queue,
     save_queue: asyncio.Queue,
     status_queue: asyncio.Queue,
+    watchdog_queue: asyncio.Queue,
 ) -> None:
     async with get_asyncio_connection(
         host=host, port=port, status_queue=status_queue, client='read'
     ) as connection:
         reader, _ = connection
-        save_queue.put_nowait('Connection is set\n')
+        watchdog_queue.put_nowait('Read connection is set')
         logger.debug(
             f'Client is on at {formatted_time()} on {host}, {port}'
         )
@@ -40,6 +41,7 @@ async def listen_tcp_chat(
                 if message:
                     messages_queue.put_nowait(message.rstrip())
                     save_queue.put_nowait(message)
+                    watchdog_queue.put_nowait('New message in chat')
             except KeyboardInterrupt:
                 print('\nGoodbye!')
                 logger.debug('Client was closed by KeyboardInterrupt')
