@@ -9,7 +9,7 @@ from utils import get_asyncio_connection
 
 
 logger = logging.getLogger('client')
-logging.basicConfig(filename='logging.log', level=logging.DEBUG)
+# logging.basicConfig(filename='logging.log', level=logging.DEBUG)
 
 
 def formatted_time() -> str:

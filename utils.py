@@ -9,10 +9,8 @@ from gui import ReadConnectionStateChanged, SendingConnectionStateChanged
 
 
 watchdog_logger = logging.getLogger('watchdog')
-# watchdog_logger.setLevel(logging.DEBUG)
 formatter = logging.Formatter('[%(created)d]: %(message)s')
 ch = logging.StreamHandler()
-# ch.setLevel(logging.DEBUG)
 ch.setFormatter(formatter)
 watchdog_logger.addHandler(ch)
 
@@ -28,11 +26,12 @@ async def watch_for_connection(
     tm: int = 1
 ) -> None:
     while True:
-        async with timeout(tm) as _timeout:
-            message = await watchdog_queue.get()
-        if _timeout.expired:
-            message = f'{tm}s timeout is elapsed.'
-        watchdog_logger.debug(f'Connection is alive. {message}')
+        try:
+            async with timeout(tm) as _:
+                message = await watchdog_queue.get()
+                watchdog_logger.debug(f'Connection is alive. {message}')
+        except asyncio.TimeoutError:
+            watchdog_logger.debug(f'{tm}s timeout is elapsed.')
 
 
 def increase_delay() -> int:

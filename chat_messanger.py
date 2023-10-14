@@ -26,7 +26,7 @@ logger = logging.getLogger('messanger')
 logging.basicConfig(
     filename='logging.log',
     level=logging.DEBUG,
-    format='%(levelname)s:%(module)s:[%(asctime)s] %(message)s',
+    format='[%(asctime)s] %(levelname)s:%(module)s: %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S',
 )
 
