@@ -2,6 +2,7 @@ import asyncio
 import socket
 from contextlib import asynccontextmanager
 from typing import Tuple
+from async_timeout import timeout
 
 import logging
 from gui import ReadConnectionStateChanged, SendingConnectionStateChanged
@@ -22,9 +23,15 @@ states = {
 }
 
 
-async def watch_for_connection(watchdog_queue: asyncio.Queue) -> None:
+async def watch_for_connection(
+    watchdog_queue: asyncio.Queue,
+    tm: int = 1
+) -> None:
     while True:
-        message = await watchdog_queue.get()
+        async with timeout(tm) as _timeout:
+            message = await watchdog_queue.get()
+        if _timeout.expired:
+            message = f'{tm}s timeout is elapsed.'
         watchdog_logger.debug(f'Connection is alive. {message}')
 
 
