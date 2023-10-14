@@ -1,15 +1,12 @@
 import asyncio
 import aiofiles
 import datetime
-# import configargparse
 import logging
-# from argparse import Namespace
 
 from utils import get_asyncio_connection
 
 
 logger = logging.getLogger('client')
-# logging.basicConfig(filename='logging.log', level=logging.DEBUG)
 
 
 def formatted_time() -> str:
@@ -53,43 +50,3 @@ async def save_messages(history_file: str, save_queue: asyncio.Queue) -> None:
         while True:
             message = await save_queue.get()
             await log_file.write(f'{formatted_time()} {message}')
-
-
-# def parse_arguments() -> Namespace:
-#     parser = configargparse.ArgParser(
-#         default_config_files=['config.txt'],
-#         description='''Local chat client.
-#         Print messages to stdout and save them to file'''
-#     )
-#     parser.add(
-#         '-s',
-#         '--host',
-#         nargs='?',
-#         help='host site to be connected to'
-#     )
-#     parser.add(
-#         '-p',
-#         '--port',
-#         type=int,
-#         nargs='?',
-#         help='host port to be connected to'
-#     )
-#     parser.add(
-#         '-y',
-#         '--history',
-#         nargs='?',
-#         help='file to write chat history to'
-#     )
-#     args = parser.parse_known_args()
-
-#     return args
-
-
-# def main():
-#     args = parse_arguments()[0]
-#     host, port, history_file = args.host, args.port, args.history
-#     asyncio.run(listen_tcp_chat(host, port, history_file))
-
-
-# if __name__ == '__main__':
-#     main()
